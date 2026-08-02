@@ -23,11 +23,10 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// SERVER BASE URL (Corrected HTTPS URL)
 const String baseUrl = "https://task.paisaloots.site/user";
 
 // ==========================================
-// 1. LOGIN SCREEN
+// 1. LOGIN SCREEN WITH FORGOT PASSWORD
 // ==========================================
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -135,7 +134,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+                        );
+                      },
+                      child: const Text("Forgot Password?", style: TextStyle(color: Colors.orange)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
                     height: 48,
@@ -143,9 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: _isLoading ? null : _loginUser,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                       child: _isLoading
                           ? const CircularProgressIndicator(color: Colors.white)
@@ -182,7 +192,191 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 // ==========================================
-// 2. REGISTER SCREEN WITH OTP & PASSWORD TOGGLE
+// 2. FORGOT PASSWORD SCREEN
+// ==========================================
+class ForgotPasswordScreen extends StatefulWidget {
+  const ForgotPasswordScreen({super.key});
+
+  @override
+  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+}
+
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  final _emailController = TextEditingController();
+  final _otpController = TextEditingController();
+  final _newPasswordController = TextEditingController();
+
+  bool _isOtpSent = false;
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+
+  Future<void> _sendOtp() async {
+    if (_emailController.text.trim().isEmpty) {
+      _showSnackBar("Please enter your email", Colors.red);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse("$baseUrl/forgot_password.php"),
+        body: {"email": _emailController.text.trim()},
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (data['status'] == 'success') {
+        _showSnackBar(data['message'] ?? "OTP Sent!", Colors.green);
+        setState(() => _isOtpSent = true);
+      } else {
+        _showSnackBar(data['message'] ?? "Error", Colors.red);
+      }
+    } catch (e) {
+      _showSnackBar("Connection error: $e", Colors.red);
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _resetPassword() async {
+    if (_otpController.text.trim().isEmpty || _newPasswordController.text.trim().isEmpty) {
+      _showSnackBar("Please fill all fields", Colors.red);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse("$baseUrl/reset_password.php"),
+        body: {
+          "email": _emailController.text.trim(),
+          "otp": _otpController.text.trim(),
+          "new_password": _newPasswordController.text.trim(),
+        },
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (data['status'] == 'success') {
+        _showSnackBar(data['message'], Colors.green);
+        Navigator.pop(context); // Go back to login
+      } else {
+        _showSnackBar(data['message'] ?? "Failed", Colors.red);
+      }
+    } catch (e) {
+      _showSnackBar("Connection error: $e", Colors.red);
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: color),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Forgot Password")),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    "Reset Password",
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 24),
+                  if (!_isOtpSent) ...[
+                    TextField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
+                        labelText: "Registered Email",
+                        prefixIcon: Icon(Icons.email_outlined),
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _sendOtp,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text("Send Reset OTP", style: TextStyle(fontSize: 16, color: Colors.white)),
+                      ),
+                    ),
+                  ] else ...[
+                    TextField(
+                      controller: _otpController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: "Enter 6-Digit OTP",
+                        prefixIcon: Icon(Icons.security),
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _newPasswordController,
+                      obscureText: _obscurePassword,
+                      decoration: InputDecoration(
+                        labelText: "New Password",
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                          onPressed: () {
+                            setState(() => _obscurePassword = !_obscurePassword);
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _resetPassword,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text("Update Password", style: TextStyle(fontSize: 16, color: Colors.white)),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// 3. REGISTER SCREEN
 // ==========================================
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -224,10 +418,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final data = jsonDecode(response.body);
 
       if (data['status'] == 'success') {
-        _showSnackBar(data['message'] ?? "OTP sent to email!", Colors.green);
+        _showSnackBar(data['message'] ?? "OTP sent!", Colors.green);
         setState(() => _isOtpSent = true);
       } else {
-        _showSnackBar(data['message'] ?? "Registration failed", Colors.red);
+        _showSnackBar(data['message'] ?? "Failed", Colors.red);
       }
     } catch (e) {
       _showSnackBar("Connection error: $e", Colors.red);
@@ -256,8 +450,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final data = jsonDecode(response.body);
 
       if (data['status'] == 'success') {
-        _showSnackBar("Verification Successful! Please Login.", Colors.green);
-        Navigator.pop(context); // Return to Login
+        _showSnackBar("Verified successfully! Please Login.", Colors.green);
+        Navigator.pop(context);
       } else {
         _showSnackBar(data['message'] ?? "Invalid OTP", Colors.red);
       }
@@ -289,10 +483,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    "Create Account",
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
+                  const Text("Create Account", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 24),
                   if (!_isOtpSent) ...[
                     TextField(
@@ -322,14 +513,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         prefixIcon: const Icon(Icons.lock_outline),
                         border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
+                          icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                         ),
                       ),
                     ),
@@ -341,9 +526,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         onPressed: _isLoading ? null : _sendOtp,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orange,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
                         child: _isLoading
                             ? const CircularProgressIndicator(color: Colors.white)
@@ -367,44 +550,4 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _verifyOtp,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
-                            : const Text("Verify OTP & Complete", style: TextStyle(fontSize: 16, color: Colors.white)),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ==========================================
-// 3. HOME SCREEN
-// ==========================================
-class HomeScreen extends StatelessWidget {
-  final String userName;
-  const HomeScreen({super.key, required this.userName});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Home")),
-      body: Center(
-        child: Text(
-          "Welcome, $userName!",
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-}
+                          backgroundColo
