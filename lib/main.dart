@@ -23,10 +23,11 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// SERVER BASE URL
 const String baseUrl = "https://task.paisaloots.site/user";
 
 // ==========================================
-// 1. LOGIN SCREEN WITH FORGOT PASSWORD
+// 1. LOGIN SCREEN
 // ==========================================
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -65,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => HomeScreen(userName: data['user']['name']),
+            builder: (context) => HomeScreen(userName: data['user']['name'] ?? 'User'),
           ),
         );
       } else {
@@ -260,8 +261,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       final data = jsonDecode(response.body);
 
       if (data['status'] == 'success') {
-        _showSnackBar(data['message'], Colors.green);
-        Navigator.pop(context); // Go back to login
+        _showSnackBar(data['message'] ?? "Password updated successfully!", Colors.green);
+        Navigator.pop(context);
       } else {
         _showSnackBar(data['message'] ?? "Failed", Colors.red);
       }
@@ -550,4 +551,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _verifyOtp,
                         style: ElevatedButton.styleFrom(
-                          backgroundColo
+                          backgroundColor: Colors.green,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text("Verify OTP & Complete", style: TextStyle(fontSize: 16, color: Colors.white)),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// 4. HOME SCREEN
+// ==========================================
+class HomeScreen extends StatelessWidget {
+  final String userName;
+  const HomeScreen({super.key, required this.userName});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Home")),
+      body: Center(
+        child: Text(
+          "Welcome, $userName!",
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+}
