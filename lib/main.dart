@@ -24,7 +24,7 @@ class MyApp extends StatelessWidget {
 }
 
 // SERVER BASE URL
-const String baseUrl = "http://er212.nethost.in/user";
+const String baseUrl = "https://paisaloots.site/user";
 
 // ==========================================
 // 1. LOGIN SCREEN
