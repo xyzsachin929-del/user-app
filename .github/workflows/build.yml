@@ -24,9 +24,6 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Re-create Android files
-        run: flutter create --platforms=android .
-
       - name: Install Dependencies
         run: flutter pub get
 
