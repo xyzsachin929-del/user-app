@@ -11,7 +11,7 @@ dependencies:
     sdk: flutter
   http: ^1.2.0
   shared_preferences: ^2.2.2
-  ota_update: ^6.0.0
+  ota_update: ^7.0.0
 
 dev_dependencies:
   flutter_test:
@@ -22,10 +22,10 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/icon/logo.png"
+  image_path: "logo.png"
   min_sdk_android: 21
 
 flutter:
   uses-material-design: true
   assets:
-    - assets/icon/logo.png
+    - logo.png
