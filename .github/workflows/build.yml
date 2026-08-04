@@ -24,8 +24,16 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Re-create Android project (v2 embedding fix)
-        run: flutter create --platforms=android .
+      - name: Re-create Android project
+        run: flutter create --platforms=android --org=com.example .
+
+      - name: Enable Core Library Desugaring & Java 8 in Android
+        run: |
+          BUILD_GRADLE="android/app/build.gradle"
+          if [ -f "$BUILD_GRADLE" ]; then
+            sed -i '/compileOptions {/a \        coreLibraryDesugaringEnabled true' $BUILD_GRADLE
+            sed -i '/dependencies {/a \    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.0.4"' $BUILD_GRADLE
+          fi
 
       - name: Install Dependencies
         run: flutter pub get
